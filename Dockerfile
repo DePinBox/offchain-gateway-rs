@@ -16,7 +16,7 @@ RUN rm src/*.rs
 COPY ./src ./src
 
 # build for release
-RUN rm ./target/release/deps/offchain-gateway-example-full
+RUN rm ./target/release/deps/offchain_gateway_example_full*
 RUN cargo build --release
 
 # our final base
