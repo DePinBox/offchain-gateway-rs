@@ -39,5 +39,9 @@ RUN apt-get update && \
 # copy the build artifact from the build stage
 COPY --from=build /offchain-gateway-example-full/target/release/offchain-gateway-example-full .
 
+ENV PORT=8080
+
+EXPOSE ${PORT} 
+
 # set the startup command to run your binary
 CMD ["./offchain-gateway-example-full"]
