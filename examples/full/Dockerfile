@@ -1,16 +1,43 @@
-FROM        debian:bookworm-slim
+FROM rust:1.79-buster AS build
 
-RUN         apt-get update \
-            && apt-get install -y --no-install-recommends ca-certificates libssl-dev \
-            && apt-get clean \
-            && rm -rf /var/lib/apt/lists/*
+# create a new empty shell project
+RUN USER=root cargo new --bin offchain-gateway-rs
+WORKDIR /offchain-gateway-rs
 
-ENV         TINI_VERSION v0.19.0
+# copy over your manifests
+COPY ./Cargo.lock ./Cargo.lock
+COPY ./Cargo.toml ./Cargo.toml
 
-ADD         https://github.com/krallin/tini/releases/download/${TINI_VERSION}/tini-static /tini
-RUN         chmod +x /tini
+# this build step will cache your dependencies
+RUN cargo build --release
+RUN rm src/*.rs
 
-COPY        target/release/offchain-gateway-rs /bin/offchain-gateway-rs
+# copy your source tree
+COPY ./src ./src
 
-ENTRYPOINT  ["/tini", "--"]
-CMD         ["/bin/offchain-gateway-rs"]
+# build for release
+RUN rm ./target/release/deps/offchain-gateway-rs*
+RUN cargo build --release
+
+# our final base
+FROM debian:buster-slim
+
+# Set environment variables for non-interactive installation
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Update the package list and install the OpenSSL development dependencies
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+    build-essential \
+    libssl-dev \
+    ca-certificates \
+    wget \
+    libpq-dev \
+    && apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+# copy the build artifact from the build stage
+COPY --from=build /offchain-gateway-rs/target/release/offchain-gateway-rs .
+
+# set the startup command to run your binary
+CMD ["./offchain-gateway-rs"]
