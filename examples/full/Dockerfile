@@ -1,8 +1,8 @@
 FROM rust:1.79-buster AS build
 
 # create a new empty shell project
-RUN USER=root cargo new --bin offchain-gateway-rs
-WORKDIR /offchain-gateway-rs
+RUN USER=root cargo new --bin offchain-gateway-example-full
+WORKDIR /offchain-gateway-example-full
 
 # copy over your manifests
 COPY ./Cargo.lock ./Cargo.lock
@@ -16,7 +16,7 @@ RUN rm src/*.rs
 COPY ./src ./src
 
 # build for release
-RUN rm ./target/release/deps/offchain-gateway-rs*
+RUN rm ./target/release/deps/offchain-gateway-example-full
 RUN cargo build --release
 
 # our final base
@@ -37,7 +37,7 @@ RUN apt-get update && \
     rm -rf /var/lib/apt/lists/*
 
 # copy the build artifact from the build stage
-COPY --from=build /offchain-gateway-rs/target/release/offchain-gateway-rs .
+COPY --from=build /offchain-gateway-example-full/target/release/offchain-gateway-example-full .
 
 # set the startup command to run your binary
-CMD ["./offchain-gateway-rs"]
+CMD ["./offchain-gateway-example-full"]
